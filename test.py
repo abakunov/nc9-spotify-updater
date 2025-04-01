@@ -5,6 +5,7 @@ import requests
 from datetime import datetime, timedelta
 import pytz
 import time
+from dateutil import parser
 
 # Загружаем переменные окружения из .env файла
 load_dotenv()
@@ -64,15 +65,19 @@ def refresh_spotify_token(user_id: str, refresh_token: str):
             "spotify_last_updated": datetime.now().isoformat()
         }).eq("id", user_id).execute()
         
+        print(f"Токен для пользователя {user_id} успешно обновлен.")
         return token_data["access_token"]
         
+    except requests.exceptions.HTTPError as http_err:
+        print(f"HTTP ошибка при обновлении токена для пользователя {user_id}: {http_err}")
     except Exception as e:
         print(f"Ошибка при обновлении токена Spotify для пользователя {user_id}: {e}")
-        return None
+    return None
 
 def get_current_track(access_token: str):
     """Получает текущий трек пользователя из Spotify API"""
     try:
+        print(f"Используемый access token: {access_token}")  # Логируем токен
         headers = {
             "Authorization": f"Bearer {access_token}"
         }
@@ -105,8 +110,8 @@ def update_user_track_info(user):
     token_expires_at = user.get("spotify_token_expires_at")
     if token_expires_at:
         try:
-            # Преобразуем строку в datetime объект
-            expires_at = datetime.fromisoformat(token_expires_at.replace("Z", "+00:00"))
+            # Преобразуем строку в datetime объект, используя dateutil.parser
+            expires_at = parser.isoparse(token_expires_at)
             # Создаем timezone-aware объект для текущего времени в UTC
             current_time = datetime.now(pytz.UTC)
             if current_time >= expires_at:
@@ -115,6 +120,8 @@ def update_user_track_info(user):
                 if not new_token:
                     return
                 user["spotify_access_token"] = new_token
+            else:
+                print(f"Access token пользователя {user_id} действителен.")
         except ValueError as e:
             print(f"Ошибка при обработке даты истечения токена для пользователя {user_id}: {e}")
     

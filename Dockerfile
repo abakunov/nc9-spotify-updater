@@ -1,22 +1,17 @@
-FROM python:3.9
+# Используем официальный образ Python
+FROM python:3.9-slim
 
+# Устанавливаем рабочую директорию
 WORKDIR /app
 
-# Сначала копируем только requirements.txt для лучшего кэширования
-COPY requirements.txt .
+# Копируем файлы проекта
+COPY . /app
 
 # Устанавливаем зависимости
-RUN pip install --no-cache-dir --upgrade pip \
-    && pip install --no-cache-dir \
-       --retries 5 \
-       --timeout 100 \
-       -i https://pypi.tuna.tsinghua.edu.cn/simple \
-       --trusted-host pypi.tuna.tsinghua.edu.cn \
-       -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
-# Копируем остальные файлы
-COPY . .
-
+# Устанавливаем переменные окружения
 ENV PYTHONUNBUFFERED=1
 
-CMD ["python", "test.py"]
+# Запускаем скрипт
+CMD ["python", "test.py"] 
